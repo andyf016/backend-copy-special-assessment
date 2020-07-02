@@ -7,7 +7,8 @@
 # http://www.apache.org/licenses/LICENSE-2.0
 
 # give credits
-__author__ = "Andrew Fillenwarth, thanks to Kano and Mike A. for the help!"
+__author__ = "Andrew Fillenwarth, thanks to Kano and Mike A. for the help! \
+              also thanks to Daniel for the study hall"
 
 import re
 import os
@@ -16,17 +17,17 @@ import shutil
 import subprocess
 import argparse
 
-special_files = []
-
 
 def get_special_paths(dirname):
     """Given a dirname, returns a list of all its special files."""
-    special_pattern = re.compile(r'__\w+__')
-    with os.scandir(dirname) as entries:
-        for entry in entries:
-            if special_pattern.findall(entry.path):
-                special_files.append(os.path.abspath(entry.path))
-    return special_files
+    paths = os.listdir(dirname)
+    special_paths = []
+    for filename in paths:
+        match = re.search(r'__\w+__', filename)
+        if match:
+            special_paths.append(os.path.abspath(
+                os.path.join(dirname, filename)))
+    return special_paths
 
 
 def copy_to(path_list, dest_dir):
@@ -39,45 +40,32 @@ def copy_to(path_list, dest_dir):
 
 
 def zip_to(path_list, dest_zip):
-    """ Combine special files into a .zip"""
-    commands_with_paths = ['zip', '-j', dest_zip] + path_list
-    subprocess.run(commands_with_paths)
+    """zip special files."""
+    cmd = ['zip', '-j', dest_zip]
+    cmd.extend(path_list)
+    print('Command im going to do:')
+    print(' '.join(cmd))
+    subprocess.check_output(cmd)
     return
 
 
 def main(args):
     """Main driver code for copyspecial."""
-    # This snippet will help you get started with the argparse module.
     parser = argparse.ArgumentParser()
     parser.add_argument('--todir', help='dest dir for special files')
     parser.add_argument('--tozip', help='dest zipfile for special files')
-    parser.add_argument('--fromdir', help='source directory for special files')
-    # TODO: add one more argument definition to parse the 'from_dir' argument
+    parser.add_argument('from_dir', help='source directory for special files')
     ns = parser.parse_args(args)
+    special_paths = get_special_paths(ns.from_dir)
     if not ns:
         parser.print_usage()
         sys.exit(1)
-    dest_dir = ns.todir
-    dest_zip = ns.tozip
-    source_dir = ns.fromdir
-    files = get_special_paths(source_dir)
-    if dest_dir:
-        copy_to(files, dest_dir)
-    if dest_zip:
-        zip_to(files, dest_zip)
+    if ns.todir:
+        copy_to(special_paths, ns.todir)
+    if ns.tozip:
+        zip_to(special_paths, ns.tozip)
     else:
-        for item in special_files:
-            print(item)
-
-    # TODO: you must write your own code to get the command line args.
-    # Read the docs and examples for the argparse module about how to do this.
-
-    # Parsing command line arguments is a must-have skill.
-    # This is input data validation. If something is wrong (or missing) with
-    # any required args, the general rule is to print a usage message and
-    # exit(1).
-
-    # Your code here: Invoke (call) your functions
+        print('\n'.join(special_paths))
 
 
 if __name__ == "__main__":
